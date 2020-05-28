@@ -1,11 +1,11 @@
 <template>
-  <v-container fluid>
+  <v-container>
     <v-row>
       <v-col cols="12" v-if="allDisabled">
         <v-alert type="warning">现在不是上班时间</v-alert>
       </v-col>
       <v-col cols="12" v-if="student.isLogin">
-        <v-alert type="success" prominent :icon="mdiCheckCircle">
+        <v-alert type="success" dense :icon="mdiCheckCircle">
           <h3>已签到</h3>
           <p class="mb-0">学号：{{student.id}}</p>
           <p class="mb-0">姓名：{{student.name}}</p>
@@ -376,11 +376,10 @@ export default {
     }
   },
   beforeMount() {
-    //get id from localStorage
-    this.inputId = localStorage.getItem("id");
-
     if (this.checkTimeVaild()) {
       this.allDisabled = false;
+      //get id from localStorage
+      this.inputId = localStorage.getItem("id");
 
       //console.log(`check ${this.inputId} login?`);
       var res = {

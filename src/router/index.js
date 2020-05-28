@@ -13,7 +13,7 @@ const routes = [
   {
     path: '/rank',
     name: 'Rank',
-    component: () => import('../views/Rank.vue')
+    component: () => import(/* webpackChunkName: "rank" */'../views/Rank.vue')
   },
   {
     path: '/about',
