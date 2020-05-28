@@ -17,7 +17,7 @@
       <v-spacer></v-spacer>
 
       <v-app-bar-nav-icon @click="drawer = true">
-        <v-icon dark>menu</v-icon>
+        <v-icon dark>{{svgPath.mdiMenu}}</v-icon>
       </v-app-bar-nav-icon>
     </v-app-bar>
 
@@ -26,14 +26,21 @@
         <v-list-item-group active-class="deep-purple--text text--accent-4">
           <v-list-item to="/">
             <v-list-item-icon>
-              <v-icon>home</v-icon>
+              <v-icon>{{svgPath.mdiApps}}</v-icon>
             </v-list-item-icon>
             <v-list-item-title>首页</v-list-item-title>
           </v-list-item>
 
+          <v-list-item to="/rank">
+            <v-list-item-icon>
+              <v-icon>{{svgPath.mdiEqualizer}}</v-icon>
+            </v-list-item-icon>
+            <v-list-item-title>排名</v-list-item-title>
+          </v-list-item>
+
           <v-list-item to="/about">
             <v-list-item-icon>
-              <v-icon>info</v-icon>
+              <v-icon>{{svgPath.mdiInformationOutline}}</v-icon>
             </v-list-item-icon>
             <v-list-item-title>关于</v-list-item-title>
           </v-list-item>
@@ -48,9 +55,23 @@
 </template>
 
 <script>
+import { mdiApps, mdiMenu, mdiInformationOutline, mdiEqualizer } from "@mdi/js";
 export default {
   data: () => ({
+    svgPath: {
+      mdiApps,
+      mdiMenu,
+      mdiInformationOutline,
+      mdiEqualizer
+    },
     drawer: false
   })
 };
 </script>
+
+<style>
+.v-alert--prominent .v-alert__icon.v-icon svg {
+  width: 32px;
+  height: 32px;
+}
+</style>
