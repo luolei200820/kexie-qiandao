@@ -124,6 +124,7 @@
             mobile-breakpoint="0"
             item-key="userid"
             :items-per-page="5"
+            calculate-widths
           >
             <template v-slot:item.name="{item}">
               <v-chip :color="getColor(item.state)" dark>{{ item.name }}</v-chip>
@@ -203,27 +204,27 @@ export default {
         headers: [
           {
             text: '学号',
-            align: 'left',
+            align: 'center',
             sortable: false,
             value: 'userid'
           },
           {
             text: '姓名',
-            align: 'left',
+            align: 'center',
             sortable: false,
-            width:'100px',
-            value: 'username'
+            value: 'username',
+            class: 'data-table-td-mw100'
           },
           {
             text: '部门',
-            align: 'left',
+            align: 'center',
             sortable: true,
-            width:'100px',
-            value: 'dept'
+            value: 'dept',
+            class: 'data-table-td-mw100'
           },
           {
             text: '地点',
-            align: 'left',
+            align: 'center',
             sortable: false,
             value: 'location'
           },
@@ -393,7 +394,6 @@ export default {
     },
     isLogin(val) {
       //如果computed中的isLogin为true，则设置全局登录状态
-      console.log(val)
       if (!val) {
         store.setLogOut()
       } else {

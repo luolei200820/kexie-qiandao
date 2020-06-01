@@ -23,26 +23,27 @@ export default {
         headers: [
           {
             text: '学号',
-            align: 'left',
+            align: 'center',
             sortable: false,
             value: 'userid'
           },
           {
             text: '姓名',
-            align: 'left',
+            align: 'center',
             sortable: false,
-            value: 'username'
+            value: 'username',
+            class: 'data-table-td-mw100'
           },
           {
             text: '部门',
-            align: 'left',
-            sortable: true,
+            align: 'center',
+            sortable: false,
             value: 'dept',
-            width: '100px'
+            class: 'data-table-td-mw100'
           },
           {
             text: '地点',
-            align: 'left',
+            align: 'center',
             sortable: false,
             value: 'location'
           },

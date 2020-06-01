@@ -74,4 +74,7 @@ export default {
   width: 32px;
   height: 32px;
 }
+.data-table-td-mw100 {
+  min-width: 100px;
+}
 </style>
