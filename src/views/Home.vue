@@ -4,21 +4,21 @@
       <v-col cols="12" v-if="allDisabled">
         <v-alert type="warning">现在不是上班时间</v-alert>
       </v-col>
-      <v-col cols="12" v-if="student.isLogin">
+      <v-col cols="12" v-if="isLogin">
         <v-alert type="success" dense :icon="mdiCheckCircle">
           <h3>已签到</h3>
-          <p class="mb-0">学号：{{student.id}}</p>
-          <p class="mb-0">姓名：{{student.name}}</p>
+          <p class="mb-0">学号：{{shareState.student.id}}</p>
+          <p class="mb-0">姓名：{{shareState.student.name}}</p>
         </v-alert>
       </v-col>
       <v-col cols="12">
         <v-text-field
+          :rules="idError"
           label="输入学号"
-          :rules="[rules.required]"
-          ref="id"
+          ref="inputId"
           hide-details="auto"
+          :disabled="inputIdDisabled"
           v-model="inputId"
-          :disabled="inputDisabled"
         ></v-text-field>
       </v-col>
       <v-col cols="12">
@@ -29,7 +29,7 @@
           :disabled="signUpDisabled"
           @click.stop="signUp"
         >签到</v-btn>
-        <v-btn rounded outlined color="gray" @click.stop="signOut">签退</v-btn>
+        <v-btn rounded outlined color="gray" :disabled="signOutDisabled" @click.stop="signOut">签退</v-btn>
 
         <v-dialog v-model="signUpDialog.show" width="500">
           <v-card color="primary" v-if="signUpDialog.loading">
@@ -42,9 +42,10 @@
           <v-card v-else-if="signUpDialog.success">
             <v-card-title class="headline light-green">签到成功</v-card-title>
             <v-card-text>
-              <p class="mt-5">学号：{{signUpDialog.msg.id}}</p>
-              <p>姓名：{{signUpDialog.msg.name}}</p>
-              <p class="mb-0">签到开始时间：{{signUpDialog.msg.time}}</p>
+              <p class="mt-5 mb-0">学号：{{signUpDialog.msg.id}}</p>
+              <p class="mb-0">姓名：{{signUpDialog.msg.name}}</p>
+              <p class="mb-0">签到开始时间：{{signUpDialog.msg.currentTime}}</p>
+              <p class="mb-0">本周签到总时长：{{signUpDialog.msg.allTime}}</p>
             </v-card-text>
             <v-divider></v-divider>
             <v-card-actions>
@@ -56,7 +57,7 @@
           <v-card v-else>
             <v-card-title class="headline red">签到失败</v-card-title>
             <v-card-text>
-              <p class="mb-0 mt-5">已经签到或者学号写错了</p>
+              <p class="mb-0 mt-5">{{signUpDialog.msg.err}}</p>
             </v-card-text>
             <v-card-actions>
               <v-spacer></v-spacer>
@@ -76,9 +77,10 @@
           <v-card v-else-if="signOutDialog.success">
             <v-card-title class="headline light-green">签退成功</v-card-title>
             <v-card-text>
-              <p class="mt-5">学号：{{signOutDialog.msg.id}}</p>
-              <p>姓名：{{signOutDialog.msg.name}}</p>
-              <p class="mb-0">本次签到时长：{{signOutDialog.msg.time}}</p>
+              <p class="mt-5 mb-0">学号：{{signOutDialog.msg.id}}</p>
+              <p class="mb-0">姓名：{{signOutDialog.msg.name}}</p>
+              <p class="mb-0">本次签到时长：{{signOutDialog.msg.currentTime}}h</p>
+              <p class="mb-0">签到总时长：{{signOutDialog.msg.allTime}}h</p>
             </v-card-text>
             <v-divider></v-divider>
             <v-card-actions>
@@ -90,7 +92,7 @@
           <v-card v-else>
             <v-card-title class="headline red">签退失败</v-card-title>
             <v-card-text>
-              <p class="mt-5 mb-0">没有签到或者学号写错了</p>
+              <p class="mt-5 mb-0">{{signOutDialog.msg.err}}</p>
             </v-card-text>
             <v-divider></v-divider>
             <v-card-actions>
@@ -120,6 +122,7 @@
             :items="inRomList.items"
             :search="inRomList.search"
             mobile-breakpoint="0"
+            item-key="userid"
             :items-per-page="5"
           >
             <template v-slot:item.name="{item}">
@@ -142,6 +145,7 @@
             </v-card-text>
             <v-divider></v-divider>
             <v-card-actions>
+              <v-spacer></v-spacer>
               <v-btn color="grey" text @click="cancelReport">取消</v-btn>
               <v-btn color="primary" text @click="confirmReport">确认</v-btn>
             </v-card-actions>
@@ -153,27 +157,26 @@
 </template>
 
 <script>
-import { mdiCheckCircle, mdiMagnify } from "@mdi/js";
-import store from "@/store/store.js";
+import { mdiCheckCircle, mdiMagnify } from '@mdi/js'
+import store from '@/store/store.js'
 export default {
   data: function() {
     return {
       mdiCheckCircle,
       mdiMagnify,
-      student: store.state.student,
-      inputId: "",
+      inputId: '',
+      shareState: store.state,
       allDisabled: true,
-      rules: {
-        required: value => !!value || "不能留空."
-      },
       signUpDialog: {
         loading: false,
         show: false,
         success: false,
         msg: {
-          id: "",
-          name: "",
-          time: ""
+          id: '',
+          name: '',
+          currentTime: '',
+          allTime: '',
+          err: ''
         }
       },
       signOutDialog: {
@@ -181,221 +184,237 @@ export default {
         show: false,
         success: false,
         msg: {
-          id: "",
-          name: "",
-          time: ""
+          id: '',
+          name: '',
+          currentTime: 0,
+          allTime: 0,
+          err: ''
         }
       },
       reportDialog: {
         show: false,
         msg: {
-          id: "",
-          name: ""
+          id: '',
+          name: ''
         }
       },
       inRomList: {
-        search: "",
+        search: '',
         headers: [
           {
-            text: "学号",
-            align: "left",
+            text: '学号',
+            align: 'left',
             sortable: false,
-            value: "id"
+            value: 'userid'
           },
           {
-            text: "姓名",
-            align: "center",
+            text: '姓名',
+            align: 'left',
             sortable: false,
-            value: "name"
+            width:'100px',
+            value: 'username'
           },
           {
-            text: "操作",
-            align: "center",
+            text: '部门',
+            align: 'left',
+            sortable: true,
+            width:'100px',
+            value: 'dept'
+          },
+          {
+            text: '地点',
+            align: 'left',
             sortable: false,
-            value: "actions"
+            value: 'location'
+          },
+          {
+            text: '操作',
+            align: 'center',
+            sortable: false,
+            value: 'actions'
           }
         ],
-        items: [
-          {
-            id: "1800301223",
-            name: "罗磊",
-            state: 1
-          },
-          {
-            id: "1800301224",
-            name: "罗小猪1",
-            state: 1
-          },
-          {
-            id: "18003012241",
-            name: "罗小猪2",
-            state: 1
-          },
-          {
-            id: "18003012242",
-            name: "罗小猪3",
-            state: 1
-          },
-          {
-            id: "18003012243",
-            name: "罗小猪4",
-            state: 1
-          },
-          {
-            id: "18003012244",
-            name: "罗小猪5",
-            state: 1
-          },
-          {
-            id: "18003012245",
-            name: "罗小猪6",
-            state: 1
-          },
-          {
-            id: "18003012246",
-            name: "罗小猪7",
-            state: 1
-          }
-        ]
+        items: []
       }
-    };
+    }
   },
   methods: {
     checkTimeVaild() {
-      var currentTime = new Date();
-      var hours = currentTime.getHours();
-      var minutes = currentTime.getMinutes();
-      //console.log("当前时间 " + hours + ":" + minutes);
+      var currentTime = new Date()
+      var hours = currentTime.getHours()
+      var minutes = currentTime.getMinutes()
       if (hours < 6 || (hours >= 23 && minutes >= 30)) {
-        return false;
+        return false
       } else {
-        return true;
+        return true
       }
     },
     signUp() {
-      if (!this.$refs.id.validate(true)) return;
-      this.signUpDialog.show = true;
-      this.signUpDialog.loading = true;
-      setTimeout(() => {
-        //send inputId
-        var res = {
-          name: "罗磊",
-          time: "", //签到开始时间
-          state: Math.round(Math.random()) //just for test
-        };
-        if (res.state) {
-          this.signUpDialog.loading = false;
-          this.signUpDialog.success = true;
-          this.signUpDialog.msg.id = this.inputId;
-          this.signUpDialog.msg.name = res.name;
-          this.signUpDialog.msg.time = new Date().toString();
-          //refresh inRomList
+      //check valid
+      if (!this.$refs.inputId.validate(true)) return
+      //loading shows
+      this.signUpDialog.show = true
+      this.signUpDialog.loading = true
+      //send inputid
+      this.$http.post('signIn', { userId: this.inputId }).then(res => {
+        if (res.data.code === 200) {
+          this.signUpDialog.success = true
+          this.signUpDialog.loading = false
 
-          //set global state
-          store.setLogin({
-            id: this.inputId,
-            name: res.name
-          });
+          //set success msg
+          this.signUpDialog.msg.id = this.inputId
+          this.signUpDialog.msg.name = res.data.data.username
+          this.signUpDialog.msg.currentTime = new Date().toString()
+          this.signUpDialog.msg.allTime = res.data.allTime
 
           //set localStorage
-          localStorage.setItem("id", this.inputId);
+          localStorage.setItem('id', this.inputId)
+          localStorage.setItem('name', res.data.data.username)
+
+          //refresh list
+          this.getList()
         } else {
-          this.signUpDialog.loading = false;
-          this.signUpDialog.success = false;
+          this.signUpDialog.success = false
+          this.signUpDialog.loading = false
+          this.signUpDialog.msg.err = res.data.message
         }
-      }, 2000);
+      })
     },
     signOut() {
-      if (!this.$refs.id.validate(true)) return;
-      this.signOutDialog.show = true;
-      this.signOutDialog.loading = true;
+      if (!this.$refs.inputId.validate(true)) return
+      this.signOutDialog.show = true
+      this.signOutDialog.loading = true
 
-      setTimeout(() => {
-        //send local student id
-        var res = {
-          name: "罗磊",
-          time: "3小时",
-          state: Math.round(Math.random())
-        };
-        if (res.state === 1) {
-          this.signOutDialog.loading = false;
-          this.signOutDialog.success = true;
-          this.signOutDialog.msg.id = this.inputId;
-          this.signOutDialog.msg.name = res.name;
-          this.signOutDialog.msg.time = res.time;
-          store.setLogOut();
+      this.$http.post('/signOut', { userId: this.inputId }).then(res => {
+        if (res.data.code === 200) {
+          this.signOutDialog.loading = false
+          this.signOutDialog.success = true
+          this.signOutDialog.msg.id = this.inputId
+          this.signOutDialog.msg.name = res.data.data.username
+          this.signOutDialog.msg.allTime = res.data.allTime
+          this.signOutDialog.msg.currentTime = res.data.currentTime
+
+          //refresh list
+          this.getList()
+
+          store.setLogOut()
         } else {
-          this.signOutDialog.loading = false;
-          this.signOutDialog.success = false;
+          this.signOutDialog.loading = false
+          this.signOutDialog.msg.err = res.data.message
         }
-      }, 2000);
+      })
     },
     handleReport(item) {
       //console.log(item);
-      this.reportDialog.msg.id = item.id;
-      this.reportDialog.msg.name = item.name;
-      this.reportDialog.show = true;
+      this.reportDialog.msg.id = item.userid
+      this.reportDialog.msg.name = item.username
+      this.reportDialog.show = true
     },
     confirmReport() {
       //console.log("submit");
       //console.log("学号：" + this.reportDialog.msg.id);
-      this.reportDialog.show = false;
+      this.reportDialog.show = false
+      this.$http
+        .post('/Complaint', { userId: this.reportDialog.msg.id })
+        .then(res => {
+          if (res.data === 200) {
+            alert('举报成功')
+          }
+          this.getList()
+        })
       //just for test
-      this.inRomList.items.find(this.test).state = 0;
+      //this.inRomList.items.find(this.test).state = 0
       //refresh inRomList...
     },
-    test(item) {
-      return item.id === this.reportDialog.msg.id;
-    },
     cancelReport() {
-      this.reportDialog.show = false;
+      this.reportDialog.show = false
     },
     getColor(state) {
-      if (state === 0) return "red";
-      else return "green";
-    }
-  },
-  watch: {
-    "signUpDialog.loading"(val) {
-      if (!val) return;
-      if (this.signUpDialog.loading)
-        setTimeout(() => (this.signUpDialog.loading = false), 10000);
+      if (state === 0) return 'red'
+      else return 'green'
     },
-    "signOutDialog.loading"(val) {
-      if (!val) return;
-      if (this.signUpDialog.loading)
-        setTimeout(() => (this.signOutDialog.loading = false), 10000);
+    getList() {
+      this.$http.get('/').then(res => {
+        this.inRomList.items = res.data
+      })
     }
   },
   computed: {
-    inputDisabled() {
-      return this.student.isLogin;
+    inputIdDisabled() {
+      return this.allDisabled
     },
     signUpDisabled() {
-      return this.student.isLogin;
+      return this.allDisabled || this.isLogin
+    },
+    signOutDisabled() {
+      return this.allDisabled
+    },
+    idError() {
+      const rules = []
+
+      const allowSpace = false
+      const required = true
+
+      if (!allowSpace) {
+        const rule = val => (val || '').indexOf(' ') < 0 || '不允许输入空格'
+        rules.push(rule)
+      }
+
+      if (required) {
+        const rule = val => !!val || '不能留空'
+        rules.push(rule)
+      }
+
+      return rules
+    },
+    isLogin() {
+      //如果本实例的inRomList发生变化，则更新isLogin状态
+      return this.inRomList.items.some(item => {
+        return item.userid.toString() === localStorage.getItem('id')
+      })
     }
   },
-  beforeMount() {
-    if (this.checkTimeVaild()) {
-      this.allDisabled = false;
-      //get id from localStorage
-      this.inputId = localStorage.getItem("id");
-
-      //console.log(`check ${this.inputId} login?`);
-      var res = {
-        name: "罗磊",
-        state: Math.round(Math.random())
-      };
-      if (res.state === 1) {
-        store.setLogin({
-          id: this.inputId,
-          name: res.name
-        });
+  watch: {
+    'signUpDialog.loading'(val) {
+      if (!val) return
+      if (this.signUpDialog.loading) {
+        setTimeout(() => (this.signUpDialog.loading = false), 5000)
+        this.signUpDialog.success = false
+        this.signUpDialog.msg.err = '超时错误'
       }
-      //get inRomList
+    },
+    'signOutDialog.loading'(val) {
+      if (!val) return
+      if (this.signOutDialog.loading) {
+        setTimeout(() => (this.signOutDialog.loading = false), 5000)
+        this.signOutDialog.success = false
+        this.signOutDialog.msg.err = '超时错误'
+      }
+    },
+    isLogin(val) {
+      //如果computed中的isLogin为true，则设置全局登录状态
+      console.log(val)
+      if (!val) {
+        store.setLogOut()
+      } else {
+        store.setLogin({
+          id: localStorage.getItem('id'),
+          name: localStorage.getItem('name')
+        })
+      }
+    }
+  },
+  mounted() {
+    if (this.checkTimeVaild()) {
+      this.allDisabled = false
+      //get id from localStorage
+      this.inputId = localStorage.getItem('id')
+
+      //get list
+      this.getList()
     } else {
-      console.log("All disabled");
+      console.log('All disabled')
     }
   }
-};
+}
 </script>

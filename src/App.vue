@@ -21,7 +21,7 @@
       </v-app-bar-nav-icon>
     </v-app-bar>
 
-    <v-navigation-drawer v-model="drawer" absolute temporary>
+    <v-navigation-drawer v-model="drawer" fixed temporary>
       <v-list nav dense>
         <v-list-item-group active-class="deep-purple--text text--accent-4">
           <v-list-item to="/">
@@ -55,7 +55,7 @@
 </template>
 
 <script>
-import { mdiApps, mdiMenu, mdiInformationOutline, mdiEqualizer } from "@mdi/js";
+import { mdiApps, mdiMenu, mdiInformationOutline, mdiEqualizer } from '@mdi/js'
 export default {
   data: () => ({
     svgPath: {
@@ -66,7 +66,7 @@ export default {
     },
     drawer: false
   })
-};
+}
 </script>
 
 <style>

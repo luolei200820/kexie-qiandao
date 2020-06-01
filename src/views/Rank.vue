@@ -6,6 +6,7 @@
           caption="排名"
           :headers="rankList.headers"
           :items="rankList.items"
+          item-key="userid"
           hide-default-footer
           mobile-breakpoint="0"
         ></v-data-table>
@@ -21,87 +22,62 @@ export default {
       rankList: {
         headers: [
           {
-            text: "学号",
-            align: "left",
+            text: '学号',
+            align: 'left',
             sortable: false,
-            value: "id"
+            value: 'userid'
           },
           {
-            text: "姓名",
-            align: "left",
+            text: '姓名',
+            align: 'left',
             sortable: false,
-            value: "name"
+            value: 'username'
           },
           {
-            text: "当前时长",
-            align: "center",
-            sortable: false,
-            value: "time"
+            text: '部门',
+            align: 'left',
+            sortable: true,
+            value: 'dept',
+            width: '100px'
           },
           {
-            text: "排名",
-            align: "center",
+            text: '地点',
+            align: 'left',
             sortable: false,
-            value: "rank"
+            value: 'location'
+          },
+          {
+            text: '总时长',
+            align: 'center',
+            sortable: false,
+            value: 'allTime'
+          },
+          {
+            text: '排名',
+            align: 'center',
+            sortable: false,
+            value: 'index'
           }
         ],
-        items: [
-          {
-            id: "1800301223",
-            name: "罗磊",
-            time: "11h",
-            rank: 1
-          },
-          {
-            id: "18003012231",
-            name: "罗磊",
-            time: "11h",
-            rank: 2
-          },
-          {
-            id: "18003012232",
-            name: "罗磊",
-            time: "11h",
-            rank: 3
-          },
-          {
-            id: "18003012233",
-            name: "罗磊",
-            time: "11h",
-            rank: 4
-          },
-          {
-            id: "18003012234",
-            name: "罗磊",
-            time: "11h",
-            rank: 5
-          },
-          {
-            id: "18003012235",
-            name: "罗磊",
-            time: "11h",
-            rank: 6
-          },
-          {
-            id: "18003012236",
-            name: "罗磊",
-            time: "11h",
-            rank: 7
-          },
-          {
-            id: "18003012237",
-            name: "罗磊",
-            time: "11h",
-            rank: 8
-          }
-        ]
+        items: []
       }
-    };
+    }
   },
   beforeMount() {
     //get rankList
+    this.$http
+      .get('/TopFive')
+      .then(res => {
+        this.rankList.items = res.data.list
+        this.rankList.items.forEach((item, index) => {
+          item.index = index + 1
+        })
+      })
+      .catch(err => {
+        throw err
+      })
   }
-};
+}
 </script>
 
 <style>
