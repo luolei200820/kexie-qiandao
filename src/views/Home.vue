@@ -126,8 +126,8 @@
             :items-per-page="5"
             calculate-widths
           >
-            <template v-slot:item.name="{item}">
-              <v-chip :color="getColor(item.state)" dark>{{ item.name }}</v-chip>
+            <template v-slot:item.username="{item}">
+              <v-chip color="success">{{ item.username }}</v-chip>
             </template>
             <template v-slot:item.actions="{item}">
               <v-btn small @click.stop="handleReport(item)">举报</v-btn>
@@ -329,10 +329,6 @@ export default {
     },
     cancelReport() {
       this.reportDialog.show = false
-    },
-    getColor(state) {
-      if (state === 0) return 'red'
-      else return 'green'
     },
     getList() {
       this.$http.get('/').then(res => {

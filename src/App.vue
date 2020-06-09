@@ -1,6 +1,6 @@
 <template>
   <v-app>
-    <v-app-bar app color="blue lighten-3" dark>
+    <v-app-bar app dark color="blue lighten-3">
       <div class="d-flex align-center">
         <v-img
           alt="kexie Logo"
@@ -17,13 +17,13 @@
       <v-spacer></v-spacer>
 
       <v-app-bar-nav-icon @click="drawer = true">
-        <v-icon dark>{{svgPath.mdiMenu}}</v-icon>
+        <v-icon>{{svgPath.mdiMenu}}</v-icon>
       </v-app-bar-nav-icon>
     </v-app-bar>
 
     <v-navigation-drawer v-model="drawer" fixed temporary>
       <v-list nav dense>
-        <v-list-item-group active-class="deep-purple--text text--accent-4">
+        <v-list-item-group>
           <v-list-item to="/">
             <v-list-item-icon>
               <v-icon>{{svgPath.mdiApps}}</v-icon>
@@ -46,6 +46,9 @@
           </v-list-item>
         </v-list-item-group>
       </v-list>
+      <template v-slot:append>
+        <v-switch v-model="$vuetify.theme.dark" class="ml-4" label="Theme Dark"></v-switch>
+      </template>
     </v-navigation-drawer>
 
     <v-content>
