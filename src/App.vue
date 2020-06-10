@@ -1,6 +1,6 @@
 <template>
   <v-app>
-    <v-app-bar app dark color="blue lighten-3">
+    <v-app-bar app dark :color="$vuetify.theme.dark?'grey darken-4':'blue lighten-3'">
       <div class="d-flex align-center">
         <v-img
           alt="kexie Logo"
@@ -58,7 +58,12 @@
 </template>
 
 <script>
-import { mdiApps, mdiMenu, mdiInformationOutline, mdiEqualizer } from '@mdi/js'
+import {
+  mdiApps,
+  mdiMenu,
+  mdiInformationOutline,
+  mdiEqualizer,
+} from '@mdi/js'
 export default {
   data: () => ({
     svgPath: {
@@ -68,7 +73,19 @@ export default {
       mdiEqualizer
     },
     drawer: false
-  })
+  }),
+  watch: {
+    '$vuetify.theme.dark': newQuestion => {
+      localStorage.setItem('themeDark', newQuestion)
+    }
+  },
+  mounted() {
+    if (localStorage.getItem('themeDark') === 'true') {
+      this.$vuetify.theme.dark = true
+    } else {
+      this.$vuetify.theme.dark = false
+    }
+  }
 }
 </script>
 
