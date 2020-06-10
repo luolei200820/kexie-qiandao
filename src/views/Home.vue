@@ -4,13 +4,15 @@
       <v-col cols="12" v-if="allDisabled">
         <v-alert type="warning">现在不是上班时间</v-alert>
       </v-col>
-      <v-col cols="12" v-if="isLogin">
+
+      <v-col cols="12" v-if="shareState.student.isLogin">
         <v-alert type="success" dense :icon="mdiCheckCircle">
           <h3>已签到</h3>
           <p class="mb-0">学号：{{shareState.student.id}}</p>
           <p class="mb-0">姓名：{{shareState.student.name}}</p>
         </v-alert>
       </v-col>
+
       <v-col cols="12">
         <v-text-field
           :rules="idError"
@@ -21,6 +23,7 @@
           v-model="inputId"
         ></v-text-field>
       </v-col>
+
       <v-col cols="12">
         <v-btn
           class="mr-3"
@@ -30,7 +33,6 @@
           @click.stop="signUp"
         >签到</v-btn>
         <v-btn rounded outlined color="gray" :disabled="signOutDisabled" @click.stop="signOut">签退</v-btn>
-
         <v-dialog v-model="signUpDialog.show" width="500">
           <v-card color="primary" v-if="signUpDialog.loading">
             <v-card-text>
@@ -38,7 +40,6 @@
               <v-progress-linear indeterminate color="white" class="mb-0"></v-progress-linear>
             </v-card-text>
           </v-card>
-
           <v-card v-else-if="signUpDialog.success">
             <v-card-title class="headline light-green">签到成功</v-card-title>
             <v-card-text>
@@ -53,7 +54,6 @@
               <v-btn color="primary" text @click="signUpDialog.show = false">确认</v-btn>
             </v-card-actions>
           </v-card>
-
           <v-card v-else>
             <v-card-title class="headline red">签到失败</v-card-title>
             <v-card-text>
@@ -65,7 +65,6 @@
             </v-card-actions>
           </v-card>
         </v-dialog>
-
         <v-dialog v-model="signOutDialog.show" width="500">
           <v-card color="primary" v-if="signOutDialog.loading">
             <v-card-text>
@@ -73,7 +72,6 @@
               <v-progress-linear indeterminate color="white" class="mb-0"></v-progress-linear>
             </v-card-text>
           </v-card>
-
           <v-card v-else-if="signOutDialog.success">
             <v-card-title class="headline light-green">签退成功</v-card-title>
             <v-card-text>
@@ -88,7 +86,6 @@
               <v-btn color="primary" text @click="signOutDialog.show = false">确认</v-btn>
             </v-card-actions>
           </v-card>
-
           <v-card v-else>
             <v-card-title class="headline red">签退失败</v-card-title>
             <v-card-text>
@@ -103,7 +100,8 @@
         </v-dialog>
       </v-col>
     </v-row>
-    <v-row>
+
+    <v-row v-if="shareState.student.isLogin">
       <v-col cols="12">
         <v-card>
           <v-card-title>
@@ -268,9 +266,8 @@ export default {
           this.signUpDialog.msg.currentTime = new Date().toString()
           this.signUpDialog.msg.allTime = res.data.allTime
 
-          //set localStorage
-          localStorage.setItem('id', this.inputId)
-          localStorage.setItem('name', res.data.data.username)
+          //store set login
+          store.setLogin({ id: this.inputId, name: res.data.data.username })
 
           //refresh list
           this.getList()
@@ -295,10 +292,11 @@ export default {
           this.signOutDialog.msg.allTime = res.data.allTime
           this.signOutDialog.msg.currentTime = res.data.currentTime
 
+          //store set logout
+          store.setLogOut()
+
           //refresh list
           this.getList()
-
-          store.setLogOut()
         } else {
           this.signOutDialog.loading = false
           this.signOutDialog.msg.err = res.data.message
@@ -322,10 +320,15 @@ export default {
             alert('举报成功')
           }
           this.getList()
+          //如果自己举报自己。。。
+          if (
+            this.inRomList.items.some(item => {
+              return item.userid.toString() === localStorage.getItem('id')
+            })
+          ) {
+            store.setLogOut()
+          }
         })
-      //just for test
-      //this.inRomList.items.find(this.test).state = 0
-      //refresh inRomList...
     },
     cancelReport() {
       this.reportDialog.show = false
@@ -341,7 +344,7 @@ export default {
       return this.allDisabled
     },
     signUpDisabled() {
-      return this.allDisabled || this.isLogin
+      return this.allDisabled || this.shareState.student.isLogin
     },
     signOutDisabled() {
       return this.allDisabled
@@ -361,14 +364,7 @@ export default {
         const rule = val => !!val || '不能留空'
         rules.push(rule)
       }
-
       return rules
-    },
-    isLogin() {
-      //如果本实例的inRomList发生变化，则更新isLogin状态
-      return this.inRomList.items.some(item => {
-        return item.userid.toString() === localStorage.getItem('id')
-      })
     }
   },
   watch: {
@@ -387,17 +383,6 @@ export default {
         this.signOutDialog.success = false
         this.signOutDialog.msg.err = '超时错误'
       }
-    },
-    isLogin(val) {
-      //如果computed中的isLogin为true，则设置全局登录状态
-      if (!val) {
-        store.setLogOut()
-      } else {
-        store.setLogin({
-          id: localStorage.getItem('id'),
-          name: localStorage.getItem('name')
-        })
-      }
     }
   },
   mounted() {
@@ -405,6 +390,12 @@ export default {
       this.allDisabled = false
       //get id from localStorage
       this.inputId = localStorage.getItem('id')
+      //check if login from localStorage
+      if (localStorage.getItem('isLogin') === 'true') {
+        var id = localStorage.getItem('id')
+        var name = localStorage.getItem('name')
+        store.setLogin({ id, name })
+      }
 
       //get list
       this.getList()

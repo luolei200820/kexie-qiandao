@@ -75,12 +75,10 @@ export default {
     }
   },
   mounted() {
-    if (localStorage.getItem('themeDark') === 'true') {
-      this.$vuetify.theme.dark = true
-    } else {
-      this.$vuetify.theme.dark = false
-    }
-    if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+    if (
+      localStorage.getItem('themeDark') === 'true' ||
+      window.matchMedia('(prefers-color-scheme: dark)').matches
+    ) {
       this.$vuetify.theme.dark = true
     } else {
       this.$vuetify.theme.dark = false
