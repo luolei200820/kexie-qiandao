@@ -58,12 +58,7 @@
 </template>
 
 <script>
-import {
-  mdiApps,
-  mdiMenu,
-  mdiInformationOutline,
-  mdiEqualizer,
-} from '@mdi/js'
+import { mdiApps, mdiMenu, mdiInformationOutline, mdiEqualizer } from '@mdi/js'
 export default {
   data: () => ({
     svgPath: {
@@ -81,6 +76,11 @@ export default {
   },
   mounted() {
     if (localStorage.getItem('themeDark') === 'true') {
+      this.$vuetify.theme.dark = true
+    } else {
+      this.$vuetify.theme.dark = false
+    }
+    if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
       this.$vuetify.theme.dark = true
     } else {
       this.$vuetify.theme.dark = false
