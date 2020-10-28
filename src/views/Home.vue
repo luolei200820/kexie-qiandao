@@ -28,7 +28,7 @@ export default {
   },
   methods: {
     signIn() {
-      this.$http.post("/api/user/signIn", { userId:this.userId }).then((res) => {
+      this.$axios.post("/api/user/signIn", { userId:this.userId }).then((res) => {
         if (res.data.code === 0) {
           console.log("failure")
         }

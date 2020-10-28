@@ -4,10 +4,11 @@ module.exports = {
   ],
   devServer: {
     host: 'localhost',
-    port: 8080,
+    port: 9099,
     proxy: {
       '/api': {
-        target: "therainisme.com:8088",
+        target: 'http://therainisme.com:8088',
+        ws: true,
         changeOrigin: true,
         pathRewrite: {
           '^/api': '/api'
@@ -15,4 +16,5 @@ module.exports = {
       }
     }
   },
+  lintOnSave: false, // 取消 eslint 验证
 }
