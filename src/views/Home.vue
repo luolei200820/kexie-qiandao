@@ -1,68 +1,109 @@
 <template>
-  <v-card max-width="1024" class="mx-auto">
-    <v-container fluid>
-      <!-- 时间警告 -->
-      <v-alert v-if="!timeValid" type="warning">现在不是打工时间</v-alert>
+  <div>
+    <v-card
+      max-width="1024"
+      class="mx-auto"
+    >
+      <v-container fluid>
+        <!-- 时间警告 -->
+        <v-alert
+          v-if="!timeValid"
+          type="warning"
+        >现在不是打工时间</v-alert>
 
-      <!-- 显示签到信息 -->
-      <v-alert v-if="isLogin" type="success">
-        <div>{{ loginResponse.userId }} {{ loginResponse.userName }}</div>
-        <div>
-          第{{ loginResponse.week }}周 总时长：{{ loginResponse.totalTime }}小时
-        </div>
-      </v-alert>
-
-      <v-form>
-        <v-text-field
-          v-model="userId"
-          :disabled="!timeValid"
-          label="输入学号"
-        ></v-text-field>
-        <v-btn class="mr-4" :disabled="!timeValid" @click.stop="signIn"
-          >签到</v-btn
+        <!-- 显示签到信息 -->
+        <v-alert
+          v-if="$store.state.isLogin"
+          type="success"
         >
-        <v-btn class="mr-4" :disabled="!timeValid" @click.stop="signOut"
-          >签退</v-btn
+          <div>{{ loginResponse.userId }} {{ loginResponse.userName }}</div>
+          <div>第{{ loginResponse.week }}周 总时长：{{loginResponse.totalTime}}小时</div>
+        </v-alert>
+
+        <!-- 显示签退信息 -->
+        <v-alert
+          v-if="$store.state.isLogout"
+          type="info"
         >
+          <div>{{ logoutResponse.userId }} {{ logoutResponse.userName }}</div>
+          <div>本次签到时长：{{ logoutResponse.accumulatedTime }}</div>
+          <div>第{{ logoutResponse.week }}周 总时长：{{logoutResponse.totalTime}}小时</div>
+        </v-alert>
 
-        <!-- loading对话框 -->
-        <v-dialog v-model="isLoding" max-width="300">
-          <v-card color="primary" dark>
-            <v-card-text>
-              请稍等
-              <v-progress-linear
-                indeterminate
-                color="white"
-                class="mb-0"
-              ></v-progress-linear>
-            </v-card-text>
-          </v-card>
-        </v-dialog>
+        <v-form>
+          <v-text-field
+            v-model="userId"
+            :disabled="!timeValid"
+            label="输入学号"
+          ></v-text-field>
+          <v-btn
+            class="mr-4"
+            :disabled="!timeValid"
+            @click.stop="signIn"
+          >签到</v-btn>
+          <v-btn
+            class="mr-4"
+            :disabled="!timeValid"
+            @click.stop="signOut"
+          >签退</v-btn>
 
-        <!-- 签退对话框 -->
-        <v-dialog v-model="isLogout">
-          <v-card>
-            <v-container fluid>
+          <!-- loading对话框 -->
+          <v-dialog
+            v-model="isLoding"
+            max-width="300"
+            persistent
+          >
+            <v-card
+              color="primary"
+              dark
+            >
               <v-card-text>
-                <div>
-                  {{ logoutResponse.userId }} {{ logoutResponse.userName }}
-                </div>
-                <div>本次签到时长：{{ logoutResponse.accumulatedTime }}</div>
-                <div>
-                  第{{ logoutResponse.week }}周 总时长：{{
-                    logoutResponse.totalTime
-                  }}
-                </div>
+                请稍等
+                <v-progress-linear
+                  indeterminate
+                  color="white"
+                  class="mb-0"
+                ></v-progress-linear>
               </v-card-text>
-              <v-card-actions>
-                <v-btn @click.stop="isLogout = !isLogout">确认</v-btn>
-              </v-card-actions>
-            </v-container>
-          </v-card>
-        </v-dialog>
-      </v-form>
-    </v-container>
-  </v-card>
+            </v-card>
+          </v-dialog>
+        </v-form>
+      </v-container>
+    </v-card>
+
+    <!-- 当前在线的人列表 -->
+    <v-card class="my-4">
+      <v-simple-table>
+        <template #default>
+          <thead>
+            <tr>
+              <th>学号</th>
+              <th>姓名</th>
+              <th>部门</th>
+              <th>地点</th>
+              <th>操作</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr
+              v-for="item in tableData"
+              :key="item.userId"
+              :class="{ warning: item.status }"
+            >
+              <td>{{ item.userId }}</td>
+              <td>{{ item.userName }}</td>
+              <td>{{ item.userDept }}</td>
+              <td>{{ item.userLocation }}</td>
+              <td>
+                <v-btn>举报</v-btn>
+              </td>
+            </tr>
+          </tbody>
+        </template>
+      </v-simple-table>
+    </v-card>
+
+  </div>
 </template>
 
 <script>
@@ -73,34 +114,21 @@ export default {
       timeValid: true,
       userId: "",
       isLoding: false,
-      isLogin: false,
-      isLogout: false,
-      loginResponse: {
-        userId: 1900310227,
-        userName: "韦俊宇",
-        totalTime: "44.99",
-        week: 1,
-      },
-      logoutResponse: {
-        userId: 1900310227,
-        userName: "韦俊宇",
-        totalTime: "45.02",
-        accumulatedTime: "0.03",
-        week: 1,
-      },
+      tableData: [],
     };
   },
   methods: {
     signIn() {
-      this.dialog = true;
+      this.$store.commit("setLogin");
+      /* localStorage.setItem("userId", this.userId); //本地保存学号
+      this.isLoding = true; //显示loading
       this.$http
         .post("/api/user/signIn", { userId: this.userId })
         .then((res) => {
           if (res.data.code === 0) {
-            this.loginResponse = res.data.data;
-            this.isLogin = true;
-            this.isLoding = false;
-            alert(res.data.msg);
+            this.getOnline(); //更新当前在线人的列表
+            this.$store.commit({})
+            this.isLoding = false; //关闭loading
           } else {
             this.isLoding = false;
             alert(res.data.msg);
@@ -109,30 +137,59 @@ export default {
         .catch((err) => {
           alert(err);
           this.isLoding = false;
-        });
+        }); */
     },
     signOut() {
-      this.isLoding = true;
+      /* this.isLoding = true; //显示loading
       this.$http
         .post("/api/user/signOut", { userId: this.userId })
         .then((res) => {
           if (res.data.code === 0) {
-            this.signOutResponse = res.data.data;
-            this.isLogin = false;
-            this.isLoding = false;
+            //从列表中删除自己
+            let that = this;
+            let index = this.tableData.findIndex(function (person) {
+              return person.userId === that.userId;
+            });
+            this.tableData.splice(index, 1);
+
+            this.logoutResponse = res.data.data;
+            this.isLogin = false; //隐藏签到信息
+            this.isLogout = true; //显示签退信息
+            this.isLoding = false; //关闭loading
           } else {
+            this.isLoding = false; //关闭loading
             alert(res.data.msg);
           }
         })
         .catch((err) => {
           alert(err);
           this.isLoding = false;
+        }); */
+    },
+    getOnline() {
+      this.$http
+        .get("/api/record/online")
+        .then((res) => {
+          if (res.data.code === 0) {
+            this.tableData = res.data.data;
+          } else {
+            alert(res.data.msg);
+          }
+        })
+        .catch((err) => {
+          alert(err);
         });
     },
   },
   mounted() {
+    //获取当前在线的人
+    this.getOnline();
+
+    //从localStorage获取学号
+    this.userId = localStorage.getItem("userId");
+
     //使用setInterval来周期性地计算当前的时间
-    /* setInterval(() => {
+    setInterval(() => {
       var time = new Date();
       var hours = time.getHours();
       var minutes = time.getHours();
@@ -140,7 +197,7 @@ export default {
         //如果早于早上六点，晚于晚上23:30则不在打工时间
         this.timeValid = false;
       }
-    }, 1000); */
+    }, 1000);
   },
 };
 </script>
