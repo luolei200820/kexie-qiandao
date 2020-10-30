@@ -72,10 +72,14 @@
     </v-card>
 
     <!-- 当前在线的人列表 -->
-    <v-card class="my-4">
-      <v-container>
+    <v-card
+      class="my-4 mx-auto"
+      max-width="1024"
+    >
+      <v-container fluid>
         <v-text-field
           outlined
+          dense
           v-model="keyword"
           :disabled="!timeValid"
           @keyup="filter"
@@ -94,7 +98,7 @@
             </thead>
             <tbody>
               <tr
-                v-for="item in filter()"
+                v-for="item in filtedTableDatd"
                 :key="item.userId"
                 :class="{ warning: item.status }"
               >
@@ -103,7 +107,7 @@
                 <td>{{ item.userDept }}</td>
                 <td>{{ item.userLocation }}</td>
                 <td>
-                  <v-btn>举报</v-btn>
+                  <v-btn @click.stop="report(item.userId.toString(),$store.state.userId.toString())">举报</v-btn>
                 </td>
               </tr>
             </tbody>
@@ -125,6 +129,7 @@ export default {
       keyword: "",
       isLoding: false,
       tableData: [],
+      filtedTableDatd: [],
     };
   },
   methods: {
@@ -137,15 +142,21 @@ export default {
           if (res.data.code === 0) {
             this.getOnline(); //更新当前在线人的列表
             this.$store.commit("setLogin", res.data.data); //vuex设置登录
-            this.isLoding = false; //关闭loading
+            //本地存储登录信息
+            localStorage.setItem("isLogin", "true");
+            localStorage.setItem("userId", res.data.data.userId);
+            localStorage.setItem("userName", res.data.data.userName);
+            localStorage.setItem("totalTime", res.data.data.totalTime);
+            localStorage.setItem("week", res.data.data.week);
           } else {
-            this.isLoding = false;
             alert(res.data.msg);
           }
         })
         .catch((err) => {
           alert(err);
-          this.isLoding = false;
+        })
+        .finally(() => {
+          this.isLoding = false; //关闭loading
         });
     },
     signOut() {
@@ -162,14 +173,16 @@ export default {
             this.tableData.splice(index, 1);
             //vuex设置签退信息
             this.$store.commit("setLogout", res.data.data);
-            this.isLoding = false; //关闭loading
+            //清楚本地的签到信息
+            localStorage.setItem("isLogin", "false");
           } else {
-            this.isLoding = false; //关闭loading
             alert(res.data.msg);
           }
         })
         .catch((err) => {
           alert(err);
+        })
+        .finally(() => {
           this.isLoding = false;
         });
     },
@@ -179,6 +192,7 @@ export default {
         .then((res) => {
           if (res.data.code === 0) {
             this.tableData = res.data.data;
+            this.filtedTableDatd = this.tableData;
           } else {
             alert(res.data.msg);
           }
@@ -188,21 +202,25 @@ export default {
         });
     },
     filter() {
-      if (this.keyword === "") return this.tableData;
-      return this.tableData.filter((item) => {
-        for (var key in item) {
-          let value = item[key].toString();
-          if (value.indexOf(this.keyword) !== -1) {
-            return true;
+      if (this.keyword === "") this.filtedTableDatd = this.tableData;
+      else {
+        this.filtedTableDatd = this.tableData.filter((item) => {
+          for (var key in item) {
+            let value = item[key].toString();
+            if (value.indexOf(this.keyword) !== -1) {
+              console.log(value);
+              return true;
+            }
           }
-        }
-        return false;
-      });
+          return false;
+        });
+      }
     },
     report(targetUserId, operatorUserId) {
       if (operatorUserId === "") alert("请先输入自己的学号");
       else if (targetUserId === operatorUserId) alert("你想举报自己？");
       else {
+        this.isLoding = true;
         this.$http
           .post("/api/user/complaint", {
             targetUserId,
@@ -217,6 +235,9 @@ export default {
           })
           .catch((err) => {
             alert(err);
+          })
+          .finally(() => {
+            this.isLoding = false;
           });
       }
     },
@@ -226,7 +247,7 @@ export default {
     this.getOnline();
 
     //从localStorage获取学号
-    this.userId = localStorage.getItem("userId");
+    this.userId = localStorage.getItem("userId") || "";
 
     //使用setInterval来周期性地计算当前的时间
     setInterval(() => {
@@ -242,5 +263,9 @@ export default {
 };
 </script>
 
-<style>
+<style scoped>
+th,
+td {
+  white-space: nowrap;
+}
 </style>
