@@ -16,8 +16,8 @@
           v-if="$store.state.isLogin"
           type="success"
         >
-          <div>{{ loginResponse.userId }} {{ loginResponse.userName }}</div>
-          <div>第{{ loginResponse.week }}周 总时长：{{loginResponse.totalTime}}小时</div>
+          <div>{{ $store.state.userId }} {{ $store.state.userName }}</div>
+          <div>第{{ $store.state.week }}周 总时长：{{$store.state.totalTime}}小时</div>
         </v-alert>
 
         <!-- 显示签退信息 -->
@@ -25,9 +25,9 @@
           v-if="$store.state.isLogout"
           type="info"
         >
-          <div>{{ logoutResponse.userId }} {{ logoutResponse.userName }}</div>
-          <div>本次签到时长：{{ logoutResponse.accumulatedTime }}</div>
-          <div>第{{ logoutResponse.week }}周 总时长：{{logoutResponse.totalTime}}小时</div>
+          <div>{{ $store.state.userId }} {{ $store.state.userName }}</div>
+          <div>本次签到时长：{{ $store.state.accumulatedTime }}</div>
+          <div>第{{ $store.state.week }}周 总时长：{{$store.state.totalTime}}小时</div>
         </v-alert>
 
         <v-form>
@@ -73,34 +73,43 @@
 
     <!-- 当前在线的人列表 -->
     <v-card class="my-4">
-      <v-simple-table>
-        <template #default>
-          <thead>
-            <tr>
-              <th>学号</th>
-              <th>姓名</th>
-              <th>部门</th>
-              <th>地点</th>
-              <th>操作</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr
-              v-for="item in tableData"
-              :key="item.userId"
-              :class="{ warning: item.status }"
-            >
-              <td>{{ item.userId }}</td>
-              <td>{{ item.userName }}</td>
-              <td>{{ item.userDept }}</td>
-              <td>{{ item.userLocation }}</td>
-              <td>
-                <v-btn>举报</v-btn>
-              </td>
-            </tr>
-          </tbody>
-        </template>
-      </v-simple-table>
+      <v-container>
+        <v-text-field
+          outlined
+          v-model="keyword"
+          :disabled="!timeValid"
+          @keyup="filter"
+          label="搜索"
+        ></v-text-field>
+        <v-simple-table>
+          <template #default>
+            <thead>
+              <tr>
+                <th>学号</th>
+                <th>姓名</th>
+                <th>部门</th>
+                <th>地点</th>
+                <th>操作</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr
+                v-for="item in filter()"
+                :key="item.userId"
+                :class="{ warning: item.status }"
+              >
+                <td>{{ item.userId }}</td>
+                <td>{{ item.userName }}</td>
+                <td>{{ item.userDept }}</td>
+                <td>{{ item.userLocation }}</td>
+                <td>
+                  <v-btn>举报</v-btn>
+                </td>
+              </tr>
+            </tbody>
+          </template>
+        </v-simple-table>
+      </v-container>
     </v-card>
 
   </div>
@@ -113,21 +122,21 @@ export default {
     return {
       timeValid: true,
       userId: "",
+      keyword: "",
       isLoding: false,
       tableData: [],
     };
   },
   methods: {
     signIn() {
-      this.$store.commit("setLogin");
-      /* localStorage.setItem("userId", this.userId); //本地保存学号
+      localStorage.setItem("userId", this.userId); //本地保存学号
       this.isLoding = true; //显示loading
       this.$http
         .post("/api/user/signIn", { userId: this.userId })
         .then((res) => {
           if (res.data.code === 0) {
             this.getOnline(); //更新当前在线人的列表
-            this.$store.commit({})
+            this.$store.commit("setLogin", res.data.data); //vuex设置登录
             this.isLoding = false; //关闭loading
           } else {
             this.isLoding = false;
@@ -137,10 +146,10 @@ export default {
         .catch((err) => {
           alert(err);
           this.isLoding = false;
-        }); */
+        });
     },
     signOut() {
-      /* this.isLoding = true; //显示loading
+      this.isLoding = true; //显示loading
       this.$http
         .post("/api/user/signOut", { userId: this.userId })
         .then((res) => {
@@ -151,10 +160,8 @@ export default {
               return person.userId === that.userId;
             });
             this.tableData.splice(index, 1);
-
-            this.logoutResponse = res.data.data;
-            this.isLogin = false; //隐藏签到信息
-            this.isLogout = true; //显示签退信息
+            //vuex设置签退信息
+            this.$store.commit("setLogout", res.data.data);
             this.isLoding = false; //关闭loading
           } else {
             this.isLoding = false; //关闭loading
@@ -164,7 +171,7 @@ export default {
         .catch((err) => {
           alert(err);
           this.isLoding = false;
-        }); */
+        });
     },
     getOnline() {
       this.$http
@@ -179,6 +186,39 @@ export default {
         .catch((err) => {
           alert(err);
         });
+    },
+    filter() {
+      if (this.keyword === "") return this.tableData;
+      return this.tableData.filter((item) => {
+        for (var key in item) {
+          let value = item[key].toString();
+          if (value.indexOf(this.keyword) !== -1) {
+            return true;
+          }
+        }
+        return false;
+      });
+    },
+    report(targetUserId, operatorUserId) {
+      if (operatorUserId === "") alert("请先输入自己的学号");
+      else if (targetUserId === operatorUserId) alert("你想举报自己？");
+      else {
+        this.$http
+          .post("/api/user/complaint", {
+            targetUserId,
+            operatorUserId,
+          })
+          .then((res) => {
+            if (res.data.code === 0) {
+              alert(res.data.msg);
+            } else {
+              alert(res.data.msg);
+            }
+          })
+          .catch((err) => {
+            alert(err);
+          });
+      }
     },
   },
   mounted() {
